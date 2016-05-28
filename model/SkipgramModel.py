@@ -16,9 +16,6 @@ class BiGramModel(object):
         self._ytrain = list()
         self._xtest = list()
         self._ytest = list()
-        self._features = list()
-        self._targets = list()
-        self._train = np.random.choice(transcripts.keys(), int(len(transcripts.keys()) * train_size))
         self.max_vocab_size = max_vocab_size
         self.min_count = min_count
         self.problem = problem
@@ -32,27 +29,40 @@ class BiGramModel(object):
         self.target_period = target_period
 
         # Set up training and testing splits
-        train_index = np.random.choice(transcripts.keys(), int(len(transcripts.keys()) * train_size))
+        train_index = np.random.choice(transcripts.keys(), int(len(transcripts.keys()) * train_size), replace=False)
         self._train = {key: value for (key, value) in transcripts.iteritems() if key in train_index}
+        self._test = {key: value for (key, value) in transcripts.iteritems() if key not in train_index}
 
-        test_index = [key for key in transcripts.keys() if key not in train_index]
-        self._test = {key: value for (key, value) in transcripts.iteritems() if key in test_index}
+        print("{} transcripts for training, {} for testing".format(len(self._train.keys()), len(self._test.keys())))
 
-        # Build the vocabulary
+        # Build the vocabulary and generate features for train and test sets
         self.build_train_vocab(verbose)
         self.finalize_vocab()
-        self.TFIDF()
+        self._xtrain = self.TFIDF(self._train, self._vocab, train=True)
 
+        test_vocab = self.build_test_vocab(verbose)
+        self._xtest = self.TFIDF(self._test, test_vocab, train=False)
+
+        print("Re-augmenting training and testing data.."),
+        self._xtrain = np.asarray([np.asarray([doc[word] if word in doc else 0 for word in self.vocab])
+                                   for doc in self._xtrain.values()])
+        self._xtest = np.asarray([np.asarray([doc[word] if word in doc else 0 for word in self.vocab])
+                                   for doc in self._xtest.values()])
+        self._ytrain = np.asarray(self._ytrain)
+        self._ytest = np.asarray(self._ytest)
+        print("Done!")
 
     def build_train_vocab(self, verbose):
 
-        for i, key, transcript in enumerate(self._train.iteritems()):
+        for i, key in enumerate(self._train.keys()):
 
+            transcript = self._train.get(key)
             abnormal_return = self.get_target(transcript)
 
             if abnormal_return:
                 self._ytrain.append(abnormal_return)
             else:
+                del self._train[key]
                 continue
 
             # Tracks how often words appear in the transcript
@@ -83,24 +93,25 @@ class BiGramModel(object):
                 self._vocab[word][key] = tracker.get(word)
 
             if verbose:
-                if i % 250 == 0:
+                if i % 250 == 0 and i != 0:
                     print("PROGRESS: at transcript #{}, keeping {} word types".format(i, len(self._vocab)))
 
-            if i % 1000 == 0:
+            if i % 1000 == 0 and i != 0:
                 self.trim_vocab(min_reduce=2)
-
 
     def build_test_vocab(self, verbose):
 
-        test_vocab = defaultdict(int)
+        test_vocab = defaultdict(dict)
 
-        for i, key, transcript in enumerate(self._test.iteritems()):
+        for i, key in enumerate(self._test.keys()):
 
+            transcript = self._test.get(key)
             abnormal_return = self.get_target(transcript)
 
             if abnormal_return:
                 self._ytest.append(abnormal_return)
             else:
+                del self._test[key]
                 continue
 
             # Tracks how often words appear in the transcript
@@ -126,13 +137,16 @@ class BiGramModel(object):
                 test_vocab[word][key] = tracker.get(word)
 
             if verbose:
-                if i % 250 == 0:
-                    print("TESTING: at transcript #{}".format(i))
+                if i % 250 == 0 and i != 0:
+                    print("PROGRESS: preparing testing transcripts, at transcript #{}".format(i))
+
+        return test_vocab
 
 
     def TFIDF(self, transcripts, vocab, train=True):
 
-        print("Computing TF-IDF...",)
+        print("Computing TF-IDF..."),
+
         # Compute inverse document frequency
         N = len(transcripts)
         idf = defaultdict(float)
@@ -143,17 +157,23 @@ class BiGramModel(object):
         # Reaugment dictionary so transcripts are first-order keys and words are second-order keys
         # Also set self._vocab to now just be the actual vocabulary
         if train:
-            self._vocab = vocab.keys()
-            self._xtrain = {doc: {word: vocab[word][doc] for word in vocab if doc in vocab[word]}
-                              for doc in transcripts}
-        else:
-            self._xtest = {doc: {word: vocab[]}}
+            new_vocab = vocab.keys()
 
-        for doc in self._features:
-            max_freq = float(max(self._features[doc].values()))
-            self._features[doc] = {word: ((count / max_freq) * 0.5 + 0.5) * idf[word] for word, count in
-                                 self._features[doc].iteritems()}
+        features = {doc: {word: vocab[word][doc] for word in vocab if doc in vocab[word]}
+                        for doc in transcripts.keys()}
+
+        for doc in features:
+            if len(features[doc].values()) != 0:
+                max_freq = float(max(features[doc].values()))
+            else:
+                continue
+            features[doc] = {word: ((count / max_freq) * 0.5 + 0.5) * idf[word] for word, count in
+                                 features[doc].iteritems()}
+        if train:
+            self._vocab = new_vocab
+
         print("Done!")
+        return features
 
 
     def trim_vocab(self, min_reduce):
@@ -210,9 +230,17 @@ class BiGramModel(object):
         return self._vocab
 
     @property
-    def inputs(self):
-        return self._features
+    def xtrain(self):
+        return self._xtrain
 
     @property
-    def targets(self):
-        return self._targets
+    def xtest(self):
+        return self._xtest
+
+    @property
+    def ytrain(self):
+        return self._ytrain
+
+    @property
+    def ytest(self):
+        return self._ytest

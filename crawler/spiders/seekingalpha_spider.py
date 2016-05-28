@@ -17,7 +17,8 @@ class SeekingAlphaSpider(scrapy.Spider):
             url = response.urljoin(href)
             yield scrapy.Request(url, callback=self.parse_dir_contents)
 
-    def parse_dir_contents(self, response):
+    @staticmethod
+    def parse_dir_contents(response):
         for sel in response.xpath('//div[@itemprop="articleBody"]/p'):
             item = NvidiablogItem()
             item['text'] = sel.extract()
