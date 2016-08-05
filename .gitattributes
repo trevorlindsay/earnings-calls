@@ -1,1 +1,8 @@
 *.gz filter=lfs diff=lfs merge=lfs -text
+search/index/index.txt filter=lfs diff=lfs merge=lfs -text
+search/index/index2.txt filter=lfs diff=lfs merge=lfs -text
+search/index/index3.txt filter=lfs diff=lfs merge=lfs -text
+search/index/index4.txt filter=lfs diff=lfs merge=lfs -text
+search/index/index5.txt filter=lfs diff=lfs merge=lfs -text
+search/index/index6.txt filter=lfs diff=lfs merge=lfs -text
+search/index/index7.txt filter=lfs diff=lfs merge=lfs -text

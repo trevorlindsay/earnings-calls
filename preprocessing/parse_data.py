@@ -6,6 +6,7 @@ import sys
 import os
 import gzip
 
+
 # Filter warnings
 warnings.filterwarnings(action='ignore')
 
@@ -21,7 +22,7 @@ Transcript = namedtuple('Transcript', ['company',
                                        'QandA'])
 
 
-def clean_data(folder='data', subfolder='raw_data'):
+def clean_data(folder='../data', subfolder='../raw_data'):
 
     """ Cleans the scraped data by removing all quotes and empty lines. """
 
@@ -31,7 +32,7 @@ def clean_data(folder='data', subfolder='raw_data'):
     w.write('text\n') # Header for file
 
     raw_data_folder = os.path.join(data_folder, subfolder)
-    files = [os.path.join(raw_data_folder, f) for f in os.listdir(raw_data_folder) if f[0] != '.']
+    files = [os.path.join(raw_data_folder, f) for f in os.listdir(raw_data_folder) if f[-2:] == 'gz']
 
     for file in files:
 
@@ -53,7 +54,7 @@ def clean_data(folder='data', subfolder='raw_data'):
     w.close()
 
 
-def split_transcripts(folder='data', file='clean_data.csv'):
+def split_transcripts(folder='../data', file='../clean_data.csv'):
 
     """
 
@@ -154,7 +155,7 @@ def main():
     # Save transcripts dictionary to pickle file for easy re-opening
     import cPickle as pickle
 
-    folder = 'data'
+    folder = '../data'
     filename = 'transcripts.p'
     path = os.path.join(folder, filename)
 

@@ -23,7 +23,7 @@ Transcript = namedtuple('Transcript', ['company',
                                        'QandA'])
 
 
-def load_data(folder='data', file='transcripts.p.gz'):
+def load_data(folder='../data', file='transcripts.p.gz'):
     filepath = os.path.join(folder, file)
     print 'Loading {}'.format(filepath)
     with gzip.open(filepath, 'rb') as f:
@@ -34,7 +34,7 @@ def get_tbill_historical():
 
     """ Reads in historical interest rate data for the 4-week Treasury Bill. """
 
-    tbill = pd.read_csv('data/historical_tbill.csv')
+    tbill = pd.read_csv('../data/tbill/historical_tbill.csv')
     tbill.fillna(method='pad', inplace=True)
     tbill['rate'] = tbill.rate.map(lambda x: x / 100.)
     tbill['date'] = pd.to_datetime(tbill.date)
@@ -71,7 +71,15 @@ def calculate_abnormal_returns(transcripts,
     tbill = tbill()
 
     # Column headers
-    output.writerow(['key', 'name', 'ticker', 'date', 'error_code', 'return_3days', 'return_30days', 'return_60days', 'return_90days'])
+    output.writerow(['key',
+                     'name',
+                     'ticker',
+                     'date',
+                     'error_code',
+                     'return_3days',
+                     'return_30days',
+                     'return_60days',
+                     'return_90days'])
 
     for key in transcripts.keys():
 
@@ -197,6 +205,6 @@ def calculate_beta(beta_stock_returns, beta_index_returns):
 
 if __name__ == '__main__':
 
-    with open('data/abnormal_returns7.csv', 'wb') as csvfile:
+    with open('../data/abnormal_returns7.csv', 'wb') as csvfile:
         w = csv.writer(csvfile)
         calculate_abnormal_returns(load_data(), output=w)

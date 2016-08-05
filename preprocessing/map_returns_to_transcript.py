@@ -17,7 +17,7 @@ Transcript = namedtuple('Transcript', ['company',
                                        'QandA'])
 
 
-def concat_returns(folder='data'):
+def concat_returns(folder='../data'):
 
     data_folder = os.path.join(folder)
     files = deque([f for f in os.listdir(os.path.join(data_folder)) if f.find('abnormal_returns') != -1])
@@ -62,8 +62,8 @@ if __name__ == '__main__':
 
     returns = concat_returns()
 
-    with gzip.open('data/transcripts.p.gz', 'rb') as f:
+    with gzip.open('../data/transcripts.p.gz', 'rb') as f:
         transcripts = pickle.load(f)
 
     new_transcripts = map_returns(returns, transcripts)
-    pickle.dump(new_transcripts, open('data/transcripts.p', 'wb'))
+    pickle.dump(new_transcripts, open('../data/transcripts.p', 'wb'))
